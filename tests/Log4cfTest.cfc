@@ -32,4 +32,18 @@ component Lo4CfTest extends=mxunit.framework.TestCase {
             actual   = actual
         );
     }
+
+    /**
+     * @hint
+     */
+    void function nvl_given_value_should_return_the_value()
+    {
+        makePublic(variables.subject, "nvl");
+        var actual = variables.subject.nvl("value", "default");
+        debug(actual);
+        assertEquals(
+            expected = "value",
+            actual   = actual
+        );
+    }
 }

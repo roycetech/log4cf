@@ -1,0 +1,26 @@
+ #log4cf.yml
+
+log4cf:
+
+  #defaults to INFO
+  default_level: INFO
+
+  #defaults to yes
+  show_method: yes
+
+  #defaults to yes
+  show_package: yes
+
+  # Will log or not. defaults to no
+  enabled: yes
+
+  categories:
+    lang_app.practical.logging_off: OFF
+    lang_app.practical.logging_on.LoggingSample1: INFO
+    lang_app.practical.logging_on.LoggingSample2: DEBUG
+    lang_app.practical.logging_on.LoggingSample3: OFF
+
+  buckets:
+    default: ON
+    potato: ON
+    banana: OFF
