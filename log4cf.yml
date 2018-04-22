@@ -2,23 +2,22 @@
 
 log4cf:
 
-  #defaults to INFO
-  default_level: INFO
+  #defaults to OFF, recommended to be INFO
+  default_level: DEBUG
 
-  #defaults to yes
-  show_method: yes
+  #defaults to no
+  show_function: yes
 
   #defaults to yes
   show_package: yes
 
-  # Will log or not. defaults to no
-  enabled: yes
+  cf_web_root: /Applications/ColdFusion2016/cfusion/wwwroot/
 
   categories:
-    lang_app.practical.logging_off: OFF
-    lang_app.practical.logging_on.LoggingSample1: INFO
-    lang_app.practical.logging_on.LoggingSample2: DEBUG
-    lang_app.practical.logging_on.LoggingSample3: OFF
+    log4cf.example.logging_off: OFF
+    log4cf.example.logging_on.Example1: INFO
+    log4cf.example.logging_on.Example2: DEBUG
+    log4cf.example.logging_on.Example3: OFF
 
   buckets:
     default: ON
