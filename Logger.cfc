@@ -4,7 +4,7 @@
  *
  * Example log4cf.yml. Copy this to project root folder
  */
-component Log4Cf accessors=true {
+component Logger accessors=true {
 
     property Numeric defaultLevel;
     property Boolean showFunction;
@@ -60,7 +60,7 @@ component Log4Cf accessors=true {
     /**
      * Constructor.
      */
-    Log4Cf function init()
+    Logger function init()
     {
         variables.classLevel = {};
         application.ignoreList = "";
@@ -259,9 +259,20 @@ component Log4Cf accessors=true {
     private String function getClassNameDisp(required Struct ste)
     {
         var className = ('' == getActiveClass() ? getClassName(arguments.ste) : getActiveClass());
+
+        if (right(className, 3) == 'cfc') {
+            className = replace(
+                left(className, len(className) - 4),
+                '/',
+                '.',
+                "All"
+            );
+        }
+
         if (getShowPackage()) {
             return className;
         }
+
         return right(className, len(className) - find('/', className));
     }
 
@@ -282,8 +293,52 @@ component Log4Cf accessors=true {
         writeLog(
             type=LevelToType[arguments.level],
             file=arguments.bucket,
-            text="[#LOG_PREFIX[level]#] #arguments.message#");
+            text=padLeftSpace(
+                "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
+                arguments.level
+            )
+        );
     }
+
+    /**
+     * @text text to pad with spaces.
+     */
+    private String function padLeftSpace(
+        required String text,
+        required Numeric levelParam) {
+
+        var maxLen = len(LevelToType[Level.INFO]);
+
+
+        var spaces = repeatString(
+            ' ',
+            maxLen - len(LevelToType[arguments.levelParam])
+        );
+
+        return spaces & arguments.text;
+    }
+
+    private String function padSpaces(
+            required String text,
+            required Numeric length,
+            String leftOrRight="right")
+    {
+        var delta = arguments.length - len(arguments.text);
+        if (delta < 0) {
+            delta = 0;
+        }
+
+        var spaces = '';
+        for (var i = 1; i <= delta; i++) {
+            spaces &= ' ';
+        }
+        if (arguments.leftOrRight == "right") {
+            return arguments.text & spaces;
+        }
+        return  spaces & arguments.text ;
+    }
+
+    // private String function createSpaces(required n)
 
     /**
      * rtfc

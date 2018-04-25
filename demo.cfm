@@ -1,5 +1,5 @@
 <cfscript>
-    logger = new log4cf.Log4Cf();
+    logger = new log4cf.Logger();
     logger.debug("Debugging text");
     logger.info("Information text");
     logger.warn("Warning text");
