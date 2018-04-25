@@ -18,4 +18,7 @@
     new log4cf.example.logging_on.Example1();
     new log4cf.example.logging_on.Example2();
     new log4cf.example.logging_on.Example3();
+
+    new log4cf.example.logging_on.sub1.Example4();
+    new log4cf.example.logging_on.sub2.Example5();
 </cfscript>

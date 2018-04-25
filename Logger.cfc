@@ -3,6 +3,9 @@
  * log4cf.yml in root classes directory.
  *
  * Example log4cf.yml. Copy this to project root folder
+ * TODO:
+ *
+ * Remove active class.
  */
 component Logger accessors=true {
 
@@ -62,7 +65,7 @@ component Logger accessors=true {
      */
     Logger function init()
     {
-        variables.classLevel = {};
+        variables.categoryLevelMapping = {};
         application.ignoreList = "";
 
         if (!structKeyExists(application, "LOG4CF_INITIALIZED")) {
@@ -79,7 +82,6 @@ component Logger accessors=true {
 
     private Void function initConfig()
     {
-        writeDump(variables.config);
         variables.serverPath = config['cf_web_root'];
 
         setDefaultLevel(Level[readConfig('default_level', Level.INFO)]);
@@ -88,17 +90,12 @@ component Logger accessors=true {
 
         structEach(variables.config['categories'], function(key, value) {
             var calcKey = replace(key, '.', '/', 'all');
-            variables.classLevel[calcKey] = value;
+            variables.categoryLevelMapping[calcKey] = value;
         });
 
-        writeDump(variables.classLevel);
-
-            //     INSTANCE.print(INSTANCE.getClass().getSimpleName() +  ": Completed configuring from " + RESOURCE_NAME
-            //             + ".properties", OafLogger.Level.INFO);
-            // } catch (any error) {
-            //     writeLog("Error loading configuration file: #RESOURCE_NAME#.yml");
-            //     writeLog("You can still log by configuring from client calls.");
-            // }
+        structEach(variables.config['buckets'], function(key, value) {
+            variables.bucketSwitch[key] = value;
+        });
     }
 
     private String function readConfig(
@@ -179,7 +176,7 @@ component Logger accessors=true {
             required String text,
             required Struct ste,
             required Numeric level,
-            String bucket="default")
+            required String bucket)
     {
         if (!isPrinted(
                 getClassName(arguments.ste),
@@ -194,19 +191,40 @@ component Logger accessors=true {
 
         print(
             "#className##methName#:#lineNo##SEP_MSG##arguments.text#",
-             arguments.level
+             arguments.level,
+             arguments.bucket
         );
     }
 
     /** Checks the className against the ignore Set; */
     private Boolean function isPrinted(
             required String className,
-            required Numeric level)
+            required Numeric level,
+            required String bucketName)
     {
         if (!isNull(arguments.className)) {
-            return isClassLevelPrinted(arguments.className, arguments.level);
+
+            return isClassLevelPrinted(arguments.className, arguments.level) &&
+                isBucketPrinted(arguments.bucketName);
         }
         return true;
+    }
+
+    private Boolean function isBucketPrinted(required String bucketName) {
+        return "on" == lcase(variables.bucketSwitch[arguments.bucketName]);
+    }
+
+    /**
+     * Returns true if string1 starts with string2
+     * @string1 rtfc.
+     * @string2 rtfc.
+     */
+    private Boolean function startsWith(
+        required String string1,
+        required String string2)
+    {
+        var substringLen = len(arguments.string2);
+        return left(arguments.string1, substringLen) == arguments.string2;
     }
 
     /**
@@ -214,28 +232,28 @@ component Logger accessors=true {
      * @logLevel the target log level or the method used to log.
      */
     private Boolean function isClassLevelPrinted(
-        required String className,
-        required Numeric loglevel)
+            required String templateName,
+            required Numeric loglevel)
     {
         var retval = false;
         var isIdentified = false;
-        for (var classLevel in variables.classLevel) {
+        for (var category in categoryLevelMapping) {
 
-            // writeLog("CClassName: #classLevel#, className: #className#, CLevel: #variables.classLevel.get(classLevel)#, Level: #arguments.logLevel#");
+            if (startsWith(templateName, category)) {
 
+                var categoryLevel = Level[
+                    variables.categoryLevelMapping.get(category)
+                ];
 
-            if (left(className, len(classLevel)) == classLevel) {
-                retval =
-                        arguments.logLevel >= Level[variables.classLevel.get(classLevel)]
-                                && variables.classLevel.get(classLevel) != Level.OFF;
+                var isOn = categoryLevelMapping.get(categoryLevel) != Level.OFF;
+
+                retval = arguments.logLevel >= categoryLevel && isOn;
                 isIdentified = true;
             }
         }
         if (!isIdentified) {
             return logLevel >= getDefaultLevel();
         }
-
-        // writeLog(retval);
 
         return retval;
     }
@@ -287,12 +305,12 @@ component Logger accessors=true {
     private Void function print(
             required String message,
             required Numeric level,
-            required String bucket="default")
+            required String bucket)
     {
         var timeStamp = dateTimeFormat(now(), "yyyy/mm/dd HH:nn:ss");
         writeLog(
             type=LevelToType[arguments.level],
-            file=arguments.bucket,
+            file="bucket_#arguments.bucket#",
             text=padLeftSpace(
                 "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
                 arguments.level

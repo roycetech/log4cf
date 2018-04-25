@@ -20,6 +20,6 @@ log4cf:
     log4cf.example.logging_on.Example3: OFF
 
   buckets:
-    default: ON
+    default: OFF
     potato: ON
     banana: OFF
