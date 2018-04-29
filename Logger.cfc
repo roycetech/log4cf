@@ -13,12 +13,6 @@ component Logger accessors=true {
     property Boolean showFunction;
 
     /**
-     * This will be the subject of the logger. Set this using getInstance(Class)
-     * otherwise the calling class will be the active Class.
-     */
-    property String activeClass;
-
-    /**
      * Flag to enable/disable class name or simple name.
      */
     property String showPackage;
@@ -52,6 +46,8 @@ component Logger accessors=true {
     /** Logging yml config file. */
     RESOURCE_NAME = "log4cf";
 
+    DEFAULT_BUCKET = "default";
+
     /** */
     LOG_PREFIX = [
         "DEBUG",
@@ -62,28 +58,27 @@ component Logger accessors=true {
 
     /**
      * Constructor.
+     * @bucket the default bucket to use for this logger instance.
+     *
      */
-    Logger function init()
+    Logger function init(String bucket=DEFAULT_BUCKET)
     {
         variables.categoryLevelMapping = {};
-        application.ignoreList = "";
-
+        initCallingApp();
         if (!structKeyExists(application, "LOG4CF_INITIALIZED")) {
-            variables.config = loadYaml(RESOURCE_NAME)['log4cf'];
-            initConfig();
-
-            application['LOG4CF_INITIALIZED'] = true;
-            writeDump(structKeyExists(application, "LOG4CF_INITIALIZED"));
+            application.config = loadYaml(RESOURCE_NAME)['log4cf'];
+            application.LOG4CF_INITIALIZED = true;
+            writeLog("Initialized log4cf.");
         }
 
-        setActiveClass('');
+        variables.config = application.config;
+        initConfig();
+        variables.bucket = arguments.bucket;
         return this;
     }
 
     private Void function initConfig()
     {
-        variables.serverPath = config['cf_web_root'];
-
         setDefaultLevel(Level[readConfig('default_level', Level.INFO)]);
         setShowFunction(readConfig('show_function', false));
         setShowPackage(readConfig('show_package', true));
@@ -108,6 +103,40 @@ component Logger accessors=true {
         );
     }
 
+    private Void function initCallingApp() {
+        var stackTrace = callStackGet();
+
+        variables.serverWebRoot = reReplaceNoCase(
+            stackTrace[1].template,
+            '(\/\w+\/\w+\.\w+)$',
+            ''
+        );
+
+        for (var element in stackTrace) {
+            if (reFind('/log4cf/', element.template) == 0) {
+                initWithStackTrace(element);
+                return;
+            }
+        }
+        initWithStackTrace(stackTrace[1]);
+    }
+
+    /**
+     * Initialize the app name with the given stack trace element.
+     */
+    private Void function initWithStackTrace(required Struct ste)
+    {
+            var removedWebRoot = replace(
+                ste.template,
+                variables.serverWebRoot & '/',
+                ''
+            );
+            variables.appName = left(
+                removedWebRoot,
+                find('/', removedWebRoot) - 1
+            );
+    }
+
     /**
      * @yamlName filename without extension. Must be available at the root of the project.
      */
@@ -127,7 +156,7 @@ component Logger accessors=true {
         var yaml = javaloader.create("org.ho.yaml.Yaml");
 
         var dataFile = createObject("java", "java.io.File").init(
-            expandPath("/log4cf/log4cf.yml")
+            expandPath("/#variables.appName#/log4cf.yml")
         );
 
         return yaml.load(dataFile);
@@ -147,26 +176,26 @@ component Logger accessors=true {
 
     /* 1. Logger method: OAPagecontext */
 
-    Void function info(String text='', String bucket="default")
+    Void function info(String text='', String bucket=variables.bucket)
     {
 
         var callStack = callStackGet()[2];
         _log(arguments.text, callStack, Level.INFO, arguments.bucket);
     }
 
-    public void function debug(String text='', String bucket="default")
+    public void function debug(String text='', String bucket=variables.bucket)
     {
         var callStack = callStackGet()[2];
         _log(arguments.text, callStack, Level.DEBUG, arguments.bucket);
     }
 
-    public void function warn(String text='', String bucket="default")
+    public void function warn(String text='', String bucket=variables.bucket)
     {
         var callStack = callStackGet()[2];
         _log(arguments.text, callStack, Level.WARN, arguments.bucket);
     }
 
-    public void function error(String text='', String bucket="default")
+    public void function error(String text='', String bucket=variables.bucket)
     {
         var callStack = callStackGet()[2];
         _log(arguments.text, callStack, Level.ERROR, arguments.bucket);
@@ -276,8 +305,7 @@ component Logger accessors=true {
      */
     private String function getClassNameDisp(required Struct ste)
     {
-        var className = ('' == getActiveClass() ? getClassName(arguments.ste) : getActiveClass());
-
+        var className = getClassName(arguments.ste);
         if (right(className, 3) == 'cfc') {
             className = replace(
                 left(className, len(className) - 4),
@@ -299,7 +327,11 @@ component Logger accessors=true {
      */
     private String function getClassName(required Struct ste)
     {
-        return replace(ste.template, variables.serverPath, '');
+        return replace(
+            ste.template,
+            variables.serverWebRoot & '/',
+            ''
+        );
     }
 
     private Void function print(
@@ -359,6 +391,9 @@ component Logger accessors=true {
     // private String function createSpaces(required n)
 
     /**
+     * @value the expression to check if null or empty string.
+     * @defaultValue the expression to return if first argument is null or
+     * empty.
      * rtfc
      */
     private any function nvl(required any value, any defaultValue)
@@ -377,4 +412,3 @@ component Logger accessors=true {
         return replace(arguments.callStack.template, variables.baseProject, '');
     }
 }
-

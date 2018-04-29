@@ -1,3 +1,5 @@
+<cfapplication>
+
 <cfscript>
     logger = new log4cf.Logger();
     logger.debug("Debugging text");
