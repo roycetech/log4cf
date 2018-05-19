@@ -1,1 +1,3 @@
 lib
+.cflintrc
+cflint-result.html
