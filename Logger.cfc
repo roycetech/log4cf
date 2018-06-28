@@ -65,9 +65,15 @@ component Logger accessors=true {
     {
         variables.categoryLevelMapping = {};
         initCallingApp();
-        if (!structKeyExists(application, "LOG4CF_INITIALIZED")) {
+
+        if ((!structKeyExists(application, "LOG4CF_INITIALIZED")
+                || structKeyExists(application, "LOG4CF_ALWAYS_RELOAD")
+                && application.LOG4CF_ALWAYS_RELOAD)
+                && !structKeyExists(request, "LOG4CF_INITIALIZED")) {
+
             application.config = loadYaml(RESOURCE_NAME)['log4cf'];
             application.LOG4CF_INITIALIZED = true;
+            request.LOG4CF_INITIALIZED = true;
             writeLog("Initialized log4cf.");
         }
 
@@ -82,6 +88,7 @@ component Logger accessors=true {
         setDefaultLevel(Level[readConfig('default_level', Level.INFO)]);
         setShowFunction(readConfig('show_function', false));
         setShowPackage(readConfig('show_package', true));
+        application.LOG4CF_ALWAYS_RELOAD = readConfig('always_reload', false);
 
         structEach(variables.config['categories'], function(key, value) {
             var calcKey = replace(key, '.', '/', 'all');
@@ -93,6 +100,11 @@ component Logger accessors=true {
         });
     }
 
+    /**
+     * Read a configuration item.
+     * @key the configuration key.
+     * @defaultValue the default value if the key is not found or empty.
+     */
     private String function readConfig(
             required String key,
             required String defaultValue)
@@ -195,17 +207,39 @@ component Logger accessors=true {
         _log(arguments.text, callStack, Level.WARN, arguments.bucket);
     }
 
-    public void function error(String text='', String bucket=variables.bucket)
+    /**
+     * @text error text or the error object itself.
+     * @error the error object.
+     */
+    public void function error(
+            any text='',
+            any error="",
+            String bucket=variables.bucket)
     {
+        var errorMsg = '';
+        var errorObject = arguments.error;
+
+        if (isInstanceOf(arguments.text, "java.lang.Exception")) {
+            errorObject = arguments.text;
+            errorMsg = arguments.text.detail;
+        } else {
+            errorMsg = arguments.text;
+        }
+
+        if (isInstanceOf(arguments.error, "java.lang.Exception")) {
+            errorMsg &= " - " & arguments.error.detail;
+        }
+
         var callStack = callStackGet()[2];
-        _log(arguments.text, callStack, Level.ERROR, arguments.bucket);
+        _log(errorMsg, callStack, Level.ERROR, arguments.bucket, errorObject);
     }
 
     private Void function _log(
             required String text,
             required Struct ste,
             required Numeric level,
-            required String bucket)
+            required String bucket,
+            any errorObject = '')
     {
         if (!isPrinted(
                 getClassName(arguments.ste),
@@ -223,6 +257,10 @@ component Logger accessors=true {
              arguments.level,
              arguments.bucket
         );
+
+        if (isInstanceOf(arguments.errorObject, "java.lang.Exception")) {
+            printStackTrace(arguments.errorObject);
+        }
     }
 
     /** Checks the className against the ignore Set; */
@@ -339,7 +377,6 @@ component Logger accessors=true {
             required Numeric level,
             required String bucket)
     {
-        var timeStamp = dateTimeFormat(now(), "yyyy/mm/dd HH:nn:ss");
         writeLog(
             type=LevelToType[arguments.level],
             file="bucket_#arguments.bucket#",
@@ -347,6 +384,14 @@ component Logger accessors=true {
                 "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
                 arguments.level
             )
+        );
+    }
+
+    private Void function printStackTrace(required any errorObject)
+    {
+        writeDump(
+            var=arguments.errorObject.stackTrace,
+            output= "console"
         );
     }
 

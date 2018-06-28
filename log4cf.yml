@@ -11,6 +11,11 @@ log4cf:
   #defaults to yes
   show_package: yes
 
+  # set to yes for dev so configuration changes here are always take effect
+  # instead of 1-time load only. Defaults to 'no'.
+  always_reload: yes
+
+
   cf_web_root: /Applications/ColdFusion2016/cfusion/wwwroot/
 
   categories:

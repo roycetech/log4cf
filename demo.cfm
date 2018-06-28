@@ -23,4 +23,12 @@
 
     new log4cf.example.logging_on.sub1.Example4();
     new log4cf.example.logging_on.sub2.Example5();
+
+    try {
+        x = 1 / 0;
+    } catch (any e) {
+        logger.error('oh no!', e, 'potato');
+    }
+
+    writeDump(cgi);
 </cfscript>
