@@ -16,6 +16,7 @@ component Logger accessors=true {
      * Flag to enable/disable class name or simple name.
      */
     property String showPackage;
+    property Boolean useDump;
 
 
     /** Level - Message separator. */
@@ -78,8 +79,15 @@ component Logger accessors=true {
         }
 
         variables.config = application.config;
+
+        /**
+         * List of cgi attributes you may want to include in the log.
+         */
+        variables.cgi = '';
+
         initConfig();
         variables.bucket = arguments.bucket;
+
         return this;
     }
 
@@ -88,6 +96,7 @@ component Logger accessors=true {
         setDefaultLevel(Level[readConfig('default_level', Level.INFO)]);
         setShowFunction(readConfig('show_function', false));
         setShowPackage(readConfig('show_package', true));
+        setUseDump(readConfig('use_dump', false));
         application.LOG4CF_ALWAYS_RELOAD = readConfig('always_reload', false);
 
         structEach(variables.config['categories'], function(key, value) {
@@ -98,6 +107,12 @@ component Logger accessors=true {
         structEach(variables.config['buckets'], function(key, value) {
             variables.bucketSwitch[key] = value;
         });
+
+        if (structKeyExists(variables.config, 'cgi')) {
+            arrayEach(variables.config['cgi'], function(element) {
+                variables.cgi = listAppend(variables.cgi, arguments.element);
+            });
+        }
     }
 
     /**
@@ -249,6 +264,7 @@ component Logger accessors=true {
         }
 
         var className = getClassNameDisp(ste);
+
         var methName = getMethodDisp(ste);
         var lineNo = ste.lineNumber;
 
@@ -357,8 +373,14 @@ component Logger accessors=true {
             return className;
         }
 
-        return right(className, len(className) - find('/', className));
-    }
+        var lastIndex = 0;
+        if (reFind('\.cfml?', className) > 0) {
+            lastIndex = find('/', reverse(className));
+        } else {
+            lastIndex = find('.', reverse(className));
+        }
+        return right(className, lastIndex - 1);
+   }
 
     /**
      * Returns the template name.
@@ -377,14 +399,36 @@ component Logger accessors=true {
             required Numeric level,
             required String bucket)
     {
-        writeLog(
-            type=LevelToType[arguments.level],
-            file="bucket_#arguments.bucket#",
-            text=padLeftSpace(
-                "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
-                arguments.level
-            )
-        );
+        var cgiStr = buildCGI();
+        if (len(cgiStr) > 0) {
+            cgiStr = "CGI[#cgiStr#] ";
+        }
+
+        if (getUseDump()) {
+            var timeStamp = dateTimeFormat(now(), "yyyy/mm/dd HH:nn:ss tt");
+            writeDump(
+                var="#timeStamp# #cgiStr#[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
+                output= "console"
+            );
+        } else {
+            writeLog(
+                type=LevelToType[arguments.level],
+                file="bucket_#arguments.bucket#",
+                text=cgiStr & padLeftSpace(
+                    "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
+                    arguments.level
+                )
+            );
+        }
+    }
+
+    private String function buildCGI()
+    {
+        var retval = "";
+        for (var element in variables.cgi) {
+            retval = listAppend(retval, cgi[element]);
+        }
+        return retval;
     }
 
     private Void function printStackTrace(required any errorObject)

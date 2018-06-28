@@ -30,5 +30,5 @@
         logger.error('oh no!', e, 'potato');
     }
 
-    writeDump(cgi);
+    // writeDump(cgi);
 </cfscript>
