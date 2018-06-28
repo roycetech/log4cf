@@ -413,7 +413,7 @@ component Logger accessors=true {
         } else {
             writeLog(
                 type=LevelToType[arguments.level],
-                file="bucket_#arguments.bucket#",
+                file="log4cf_#arguments.bucket#",
                 text=cgiStr & padLeftSpace(
                     "[#padSpaces(LOG_PREFIX[level], 5)#] #arguments.message#",
                     arguments.level

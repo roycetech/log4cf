@@ -29,6 +29,4 @@
     } catch (any e) {
         logger.error('oh no!', e, 'potato');
     }
-
-    // writeDump(cgi);
 </cfscript>

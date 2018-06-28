@@ -9,15 +9,14 @@ log4cf:
   show_function: yes
 
   #defaults to yes. shows the full class name for components.
-  show_package: no
+  show_package: yes
 
   # set to yes for dev so configuration changes here are always take effect
   # instead of 1-time load only. Defaults to 'no'.
   always_reload: yes
 
-  # use dump instead of writeLog for more concise logging.
-  use_dump: yes
-
+  # use dump instead of writeLog for more concise logging, but without file logs.
+  use_dump: no
 
   cf_web_root: /Applications/ColdFusion2016/cfusion/wwwroot/
 
@@ -28,7 +27,7 @@ log4cf:
     log4cf.example.logging_on.Example3: OFF
 
   buckets:
-    default: OFF
+    default: ON
     potato: ON
     banana: OFF
 
