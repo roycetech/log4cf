@@ -11,10 +11,6 @@ log4cf:
   #defaults to yes. shows the full class name for components.
   show_package: yes
 
-  # set to yes for dev so configuration changes here are always take effect
-  # instead of 1-time load only. Defaults to 'no'.
-  always_reload: yes
-
   # use dump instead of writeLog for more concise logging, but without file logs.
   use_dump: no
 
@@ -27,7 +23,7 @@ log4cf:
     log4cf.example.logging_on.Example3: OFF
 
   buckets:
-    default: ON
+    default: OFF
     potato: ON
     banana: OFF
 

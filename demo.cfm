@@ -1,6 +1,13 @@
 <cfapplication>
 
 <cfscript>
+
+
+    // To force reload configuration file
+    structDelete(application, 'LOG4CF_INITIALIZED');
+    structDelete(request, 'LOG4CF_INITIALIZED');
+
+
     logger = new log4cf.Logger();
     logger.debug("Debugging text");
     logger.info("Information text");

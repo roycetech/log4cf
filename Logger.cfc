@@ -67,11 +67,8 @@ component Logger accessors=true {
         variables.categoryLevelMapping = {};
         initCallingApp();
 
-        if ((!structKeyExists(application, "LOG4CF_INITIALIZED")
-                || structKeyExists(application, "LOG4CF_ALWAYS_RELOAD")
-                && application.LOG4CF_ALWAYS_RELOAD)
+        if (!structKeyExists(application, "LOG4CF_INITIALIZED")
                 && !structKeyExists(request, "LOG4CF_INITIALIZED")) {
-
             application.config = loadYaml(RESOURCE_NAME)['log4cf'];
             application.LOG4CF_INITIALIZED = true;
             request.LOG4CF_INITIALIZED = true;
@@ -97,7 +94,6 @@ component Logger accessors=true {
         setShowFunction(readConfig('show_function', false));
         setShowPackage(readConfig('show_package', true));
         setUseDump(readConfig('use_dump', false));
-        application.LOG4CF_ALWAYS_RELOAD = readConfig('always_reload', false);
 
         structEach(variables.config['categories'], function(key, value) {
             var calcKey = replace(key, '.', '/', 'all');
