@@ -88,6 +88,9 @@ component Logger accessors=true {
         return this;
     }
 
+    /**
+     * @hint initialise config.
+     */
     private Void function initConfig()
     {
         setDefaultLevel(Level[readConfig('default_level', Level.INFO)]);
@@ -120,10 +123,13 @@ component Logger accessors=true {
             required String key,
             required String defaultValue)
     {
-        return nvl(
-            variables.config[arguments.key],
-            arguments.defaultValue
-        );
+        if (structKeyExists(variables.config, arguments.key)) {
+            return nvl(
+                variables.config[arguments.key],
+                arguments.defaultValue
+            );
+        }
+        return arguments.defaultValue;
     }
 
     private Void function initCallingApp() {
@@ -166,13 +172,13 @@ component Logger accessors=true {
     private Struct function loadYaml(required String yamlName)
     {
         // Load jyml.jar with JavaLoader
-        javaloaderComponent = createObject(
+        var javaloaderComponent = createObject(
             "component",
             "javaloader.JavaLoader"
         );
 
         var jarPath = expandPath("/log4cf/lib/jyaml-1.3.jar");
-        javaLoader = javaloaderComponent.init(
+        var javaLoader = javaloaderComponent.init(
             [jarPath]);
 
         // Create jyml class
@@ -380,6 +386,7 @@ component Logger accessors=true {
 
     /**
      * Returns the template name.
+     * @ste the call stack struct.
      */
     private String function getClassName(required Struct ste)
     {
@@ -390,6 +397,11 @@ component Logger accessors=true {
         );
     }
 
+    /**
+     * @message the text to log.
+     * @level the level of the log to use.
+     * @bucket the bucket to use for the log.
+     */
     private Void function print(
             required String message,
             required Numeric level,
@@ -418,6 +430,9 @@ component Logger accessors=true {
         }
     }
 
+    /**
+     * @hint builds the cgi object to the log.
+     */
     private String function buildCGI()
     {
         var retval = "";
@@ -427,6 +442,9 @@ component Logger accessors=true {
         return retval;
     }
 
+    /**
+     * @errorObject the error object inside the catch clause.
+     */
     private Void function printStackTrace(required any errorObject)
     {
         writeDump(
@@ -437,6 +455,7 @@ component Logger accessors=true {
 
     /**
      * @text text to pad with spaces.
+     * @levelParam desired level.
      */
     private String function padLeftSpace(
         required String text,
@@ -453,6 +472,11 @@ component Logger accessors=true {
         return spaces & arguments.text;
     }
 
+    /**
+     * @text text to pad.
+     * @length desired minimum length of text with spaces.
+     * @leftOrRight place where to put padding spaces.
+     */
     private String function padSpaces(
             required String text,
             required Numeric length,
@@ -464,7 +488,7 @@ component Logger accessors=true {
         }
 
         var spaces = '';
-        for (var i = 1; i <= delta; i++) {
+        for (var idx = 1; idx <= delta; idx++) {
             spaces &= ' ';
         }
         if (arguments.leftOrRight == "right") {
